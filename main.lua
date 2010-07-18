@@ -1,0 +1,150 @@
+local http = require("socket.http")
+local ltn12 = require("ltn12")
+require("ualove.init")
+
+local function drawStatus(s)
+	love.graphics.clear()
+	love.graphics.print(s, 2, 595)
+	love.graphics.present()
+end
+
+function love.run()
+	drawStatus("Getting update info...")
+	-- load the config in this .love file
+	local conf = {}
+	do
+		local f = assert(loadfile("updconf.lua"))
+		setfenv(f, conf)
+		f()
+	end
+	-- yes, github
+	local baseurl = ("http://github.com/%s/%s/"):format(conf.author, conf.repo)
+	local manifestinfo = {}
+	do
+		local s = http.request(baseurl..("raw/upd/manifest.lua"))
+		local f = assert(loadstring(s))
+		setfenv(f, manifestinfo)
+		f()
+	end
+	-- this can be changed but I don't see any reason why
+	love.filesystem.setIdentity(("game-%s-%s"):format(conf.author, conf.repo))
+	local dir = love.filesystem.getSaveDirectory().."/"
+	local curVer = 000
+	do
+		if love.filesystem.exists("/updmanifest.lua") then
+			-- there's already a version installed!
+			local t = {}
+			local f = assert(loadfile(dir.."updmanifest.lua"))
+			setfenv(f, t)
+			f()
+			curVer = t.version
+		end
+	end
+	local latestVer = curVer
+	do
+		local versions = manifestinfo.versions
+		for k=1,#versions do
+			local ver,veri = versions[k],{}
+			if ver > curVer then
+				-- we only need to download the manifests of more recent versions
+				local s = http.request(baseurl..("raw/upd/manifest-%03d.lua"):format(ver))
+				local f = assert(loadstring(s))
+				setfenv(f, veri)
+				f()
+				veri.version = ver
+				manifestinfo.versions[k] = veri
+				latestVer = ver
+			end
+		end
+	end
+	if curVer < latestVer then
+		-- time to do stuff
+		love.graphics.clear()
+		drawStatus((curVer == 000 and "Downloading game...") or "Downloading update...")
+		love.graphics.present()
+		local filesToDownload = {}
+		local versions = manifestinfo.versions
+		local latestTag = versions[#versions].tag
+		if curVer == 000 then
+			-- just download everything
+			filesToDownload = versions[#versions].files
+		else
+			for k=1,#versions do
+				local ver = versions[k]
+				for n=1,#ver.files.updated do
+					files[ver.files.updated[n]] = true
+				end
+				for n=1,#ver.files.removed do
+					files[ver.files.updated[n]] = nil
+				end
+			end
+		end
+		for name in pairs(filesToDownload) do
+			local url = ("%sraw/%s/%s"):format(baseurl, latestTag, name)
+			if name:find("^.+/") then
+				-- not sure if this works with multiple non-existant directories but that shouldn't happen so w/e
+				local fdir = name:sub(name:find("^.+/"))
+				love.filesystem.mkdir(fdir)
+			end
+			http.request{
+				url = url,
+				sink = ltn12.sink.file(io.open(dir..name, "w"))
+			}
+		end
+		love.filesystem.write("updmanifest.lua", ("version = %03d"):format(latestVer))
+	end
+	-- load the game
+	love.filesystem.load("main.lua")()
+	-- run the game, UaLove style (lols, vendor lock-in)
+	if love.graphics then
+		love.graphics.clear()
+	end
+	hook.call("initial")
+	if love.graphics then
+		love.graphics.present()
+	end
+
+	hook.call("load")
+
+	local dt = 0
+
+	if love.audio then
+		hook.add("quit", function()
+			love.audio.stop()
+		end, "audioquitcheck")
+	end
+
+	while true do
+		if love.timer then
+			love.timer.step()
+			dt = love.timer.getDelta()
+		end
+		hook.call("update", dt)
+
+        if love.event then
+            for e,a,b,c in love.event.poll() do
+				if e == "q" then
+					game.quit = true
+				end
+                love.handlers[e](a,b,c)
+            end
+        end
+
+		if game.quit == true then
+			hook.call("quit")
+			return
+		end
+
+		if love.graphics then
+			love.graphics.clear()
+			hook.call("draw")
+		end
+
+		if love.graphics then
+			love.graphics.present()
+		end
+		if love.timer then
+			love.timer.sleep(1)
+		end
+	end
+end
