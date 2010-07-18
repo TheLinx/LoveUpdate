@@ -64,7 +64,7 @@ function love.run()
 		love.graphics.clear()
 		drawStatus((curVer == 000 and "Downloading game...") or "Downloading update...")
 		love.graphics.present()
-		local filesToDownload = {}
+		local filesToDownload,filesToRemove = {},{}
 		local versions = manifestinfo.versions
 		local latestTag = versions[#versions].tag
 		if curVer == 000 then
@@ -73,11 +73,11 @@ function love.run()
 		else
 			for k=1,#versions do
 				local ver = versions[k]
-				for n=1,#ver.files.updated do
-					files[ver.files.updated[n]] = true
+				for name in pairs(ver.files.updated) do
+					filesToDownload[name] = true
 				end
-				for n=1,#ver.files.removed do
-					files[ver.files.updated[n]] = nil
+				for name in pairs(ver.files.removed) do
+					filesToRemove[name] = true
 				end
 			end
 		end
@@ -92,6 +92,9 @@ function love.run()
 				url = url,
 				sink = ltn12.sink.file(io.open(dir..name, "w"))
 			}
+		end
+		for name in pairs(filesToRemove) do
+			love.filesystem.remove(name)
 		end
 		love.filesystem.write("updmanifest.lua", ("version = %03d"):format(latestVer))
 	end
