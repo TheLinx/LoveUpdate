@@ -14,7 +14,7 @@ function love.run()
 	-- load the config in this .love file
 	local conf = {}
 	do
-		local f = assert(loadfile("updconf.lua"))
+		local f = assert(love.filesystem.load("updconf.lua"))
 		setfenv(f, conf)
 		f()
 	end
