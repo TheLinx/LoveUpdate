@@ -43,7 +43,7 @@ function love.run()
 	end
 	local latestVer = curVer
 	do
-		local versions = manifestinfo.versions
+		local versions,updVers = manifestinfo.versions,{}
 		for k=1,#versions do
 			local ver,veri = versions[k],{}
 			if ver > curVer then
@@ -53,10 +53,11 @@ function love.run()
 				setfenv(f, veri)
 				f()
 				veri.version = ver
-				manifestinfo.versions[k] = veri
+				updVers[#updVers+1] = veri
 				latestVer = ver
 			end
 		end
+		manifestinfo.versions = updVers
 	end
 	if curVer < latestVer then
 		-- time to do stuff
