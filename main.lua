@@ -41,6 +41,7 @@ function love.run()
 			curVer = t.version
 		end
 	end
+	love.filesystem.write("updmanifest.lua", "") -- hack to create the save directory...
 	local latestVer = curVer
 	do
 		local versions,updVers = manifestinfo.versions,{}
@@ -73,10 +74,10 @@ function love.run()
 		else
 			for k=1,#versions do
 				local ver = versions[k]
-				for name in pairs(ver.files.updated) do
+				for name in pairs(ver.updated) do
 					filesToDownload[name] = true
 				end
-				for name in pairs(ver.files.removed) do
+				for name in pairs(ver.removed) do
 					filesToRemove[name] = true
 				end
 			end
@@ -88,16 +89,16 @@ function love.run()
 				local fdir = name:sub(name:find("^.+/"))
 				love.filesystem.mkdir(fdir)
 			end
-			http.request{
+			print(url, http.request{
 				url = url,
 				sink = ltn12.sink.file(io.open(dir..name, "w"))
-			}
+			})
 		end
 		for name in pairs(filesToRemove) do
 			love.filesystem.remove(name)
 		end
-		love.filesystem.write("updmanifest.lua", ("version = %03d"):format(latestVer))
 	end
+	love.filesystem.write("updmanifest.lua", ("version = %03d"):format(latestVer))
 	-- load the game
 	love.filesystem.load("main.lua")()
 	-- run the game with UaLove (har har, vendor lock-in)
