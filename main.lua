@@ -8,6 +8,7 @@ local function drawStatus(s)
 	love.graphics.present()
 end
 
+local oldrun = love.run
 function love.run()
 	drawStatus("Getting update info...")
 	-- load the config in this .love file
@@ -95,56 +96,6 @@ function love.run()
 	end
 	-- load the game
 	love.filesystem.load("main.lua")()
-	-- run the game, UaLove style (lols, vendor lock-in)
-	if love.graphics then
-		love.graphics.clear()
-	end
-	hook.call("initial")
-	if love.graphics then
-		love.graphics.present()
-	end
-
-	hook.call("load")
-
-	local dt = 0
-
-	if love.audio then
-		hook.add("quit", function()
-			love.audio.stop()
-		end, "audioquitcheck")
-	end
-
-	while true do
-		if love.timer then
-			love.timer.step()
-			dt = love.timer.getDelta()
-		end
-		hook.call("update", dt)
-
-        if love.event then
-            for e,a,b,c in love.event.poll() do
-				if e == "q" then
-					game.quit = true
-				end
-                love.handlers[e](a,b,c)
-            end
-        end
-
-		if game.quit == true then
-			hook.call("quit")
-			return
-		end
-
-		if love.graphics then
-			love.graphics.clear()
-			hook.call("draw")
-		end
-
-		if love.graphics then
-			love.graphics.present()
-		end
-		if love.timer then
-			love.timer.sleep(1)
-		end
-	end
+	-- run the game with UaLove (har har, vendor lock-in)
+	oldrun()
 end

@@ -1,0 +1,36 @@
+h1. LoveUpdate
+
+LoveUpdate is a tool for easily deploying the latest version of your LÖVE game, all the time, on all platforms.
+Deploy updates in a flash and your users will automatically receive the latest content to their computer.
+
+LÖVE just got lovelier.
+
+h2. License
+
+All code is licensed under the Public Domain and may be used, modified, distributed and used as a reference without restrictions.
+
+h2. Notes
+
+There are some restriction on your game if you want to use this tool:
+
+  * You must host your game on GitHub.
+  * You must use the UaLove back-end.
+
+If you dislike these restrictions, you're free to create and distribute your own version of the tool.
+
+h2. How to Use
+
+  # "Download a zipball":http://github.com/TheLinx/LoveUpdate/zipball/master of the project.
+  # Unzip the files somewhere.
+  # Rename updconf.example.lua to updconf.lua and open it in a text editor.
+  # Change the variables contained within to reflect your game (e.g. name = "TheLinx", repo = "LoveSpin")
+  # In your repo, create a branch called "upd", and create manifests so it looks something like "this":http://github.com/TheLinx/LoveSpin/tree/upd
+  # Zip up the directory. Make sure main.lua is in the top-level directory.
+  # Rename the .zip to .love and distribute the .love file instead of a .love of your game.
+
+Have fun!
+
+h2. Q&A
+
+*Q: My game isn't in 800x600! What do I do?*
+A: Set your display settings in the "initial" hook using love.graphics.setMode.
