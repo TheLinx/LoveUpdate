@@ -91,7 +91,7 @@ function love.run()
 			end
 			print(url, http.request{
 				url = url,
-				sink = ltn12.sink.file(io.open(dir..name, "w"))
+				sink = ltn12.sink.file(io.open(dir..name, "w"..(name:sub(-4) ~= ".lua" and "b" or "")))
 			})
 		end
 		for name in pairs(filesToRemove) do
